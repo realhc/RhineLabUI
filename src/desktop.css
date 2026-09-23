@@ -1,0 +1,68 @@
+#library-overlay { --paper: var(--theme-panel, #edebe4); --line: var(--theme-line, #aaa59a); --ink: var(--theme-ink, #080a08); color:var(--ink); background:var(--paper); border:1px solid var(--line); padding:0; width:min(1380px, calc(100vw - 80px)); height:calc(100vh - 100px); max-width:none; max-height:none; margin:auto; font:13px MiSans, "Microsoft YaHei", sans-serif; overflow:hidden; box-shadow:0 24px 100px #0003; }
+#library-overlay::backdrop { background:#181a174d; backdrop-filter:blur(5px); }
+#library-overlay * { box-sizing:border-box; }
+#library-overlay [hidden] { display:none!important; }
+#library-overlay button, #library-overlay input, #library-overlay select, #library-overlay textarea { font:inherit; color:inherit; }
+#library-overlay button { background:transparent; border:1px solid var(--line); padding:8px 12px; cursor:pointer; border-radius:0; }
+#library-overlay button:hover { background:var(--theme-field); }
+#library-overlay button:disabled { opacity:.45; cursor:default; }
+#library-overlay :focus-visible { outline:2px solid var(--theme-accent); outline-offset:2px; }
+#library-overlay .solid, #library-overlay .nav .active, #library-overlay .mode .active { background:var(--ink); color:var(--paper); }
+#library-overlay .danger { color:#a15b43; }
+#library-overlay input, #library-overlay select { border:1px solid var(--line); background:var(--theme-field); padding:8px; min-width:0; }
+#library-overlay > header { height:66px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid var(--line); }
+#library-overlay .library-brand { font-size:18px; font-weight:600; letter-spacing:2px; }
+#library-overlay .library-brand small { display:block; font-size:9px; font-weight:400; letter-spacing:1px; margin-top:4px; color:var(--theme-muted); }
+#library-overlay .header-actions, #library-overlay .row { display:flex; gap:8px; align-items:center; }
+#library-overlay .shell { height:calc(100% - 96px); display:grid; grid-template-columns:300px minmax(0,1fr); }
+#library-overlay aside { border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; padding:20px 16px; gap:12px; }
+#library-overlay .eyebrow { font-size:10px; letter-spacing:1.5px; color:var(--theme-muted); }
+#library-overlay .nav { display:flex; gap:4px; }
+#library-overlay .nav button { flex:1; font-size:12px; padding:8px 3px; }
+#library-overlay .filters { display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; }
+#library-overlay #search { width:100%; }
+#library-overlay #documents { overflow:auto; flex:1; min-height:0; }
+#library-overlay .document { display:block; width:100%; text-align:left; border:0; border-bottom:1px solid var(--line); padding:14px 10px; }
+#library-overlay .document strong { display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; font-size:13px; font-weight:500; }
+#library-overlay .document small { display:block; font-size:10px; color:var(--theme-muted); margin-top:7px; }
+#library-overlay .document.selected { background:var(--theme-field); box-shadow:inset 3px 0 var(--ink); }
+#library-overlay .side-footer { font-size:10px; line-height:1.8; color:var(--theme-muted); }
+#library-overlay main { position:static; min-width:0; display:flex; flex-direction:column; padding:26px; overflow:hidden; }
+#library-overlay #editor { display:flex; flex-direction:column; min-height:0; flex:1; }
+#library-overlay .metadata { display:flex; gap:10px; margin:0 0 12px; padding:0; }
+#library-overlay #title { font-size:24px; border:0; border-bottom:1px solid var(--line); background:transparent; flex:1; padding:7px 0; }
+#library-overlay #category { width:140px; }
+#library-overlay .toolbar { display:flex; justify-content:space-between; gap:8px; padding:10px 0; flex-wrap:wrap; }
+#library-overlay .toolbar button { font-size:11px; padding:6px 10px; }
+#library-overlay .mode { display:flex; gap:4px; }
+#library-overlay #format { padding-bottom:10px; }
+#library-overlay #format button { font-size:11px; padding:4px 8px; }
+#library-overlay #panes { display:grid; grid-template-columns:1fr 1fr; min-height:100px; flex:1; border:1px solid var(--line); background:var(--theme-paper); overflow:hidden; }
+#library-overlay #body { border:0; border-right:1px solid var(--line); background:transparent; padding:22px; resize:none; width:100%; height:100%; font:13px/1.8 Consolas,"Microsoft YaHei",monospace; outline-offset:-3px; }
+#library-overlay #preview { overflow:auto; padding:18px 26px; font-size:14px; line-height:1.8; overflow-wrap:anywhere; }
+#library-overlay #panes.source, #library-overlay #panes.preview { grid-template-columns:1fr; }
+#library-overlay #panes.source #preview, #library-overlay #panes.preview #body { display:none; }
+#library-overlay #preview h1 { font-size:25px; }
+#library-overlay #preview h2 { font-size:21px; }
+#library-overlay #preview pre { background:var(--theme-field); padding:14px; overflow:auto; }
+#library-overlay #preview code { font-family:Consolas,monospace; }
+#library-overlay #preview blockquote { border-left:3px solid var(--theme-accent); margin-left:0; padding-left:16px; }
+#library-overlay #preview table { border-collapse:collapse; width:100%; }
+#library-overlay #preview td, #library-overlay #preview th { border:1px solid var(--line); padding:6px; }
+#library-overlay #preview a { color:var(--theme-accent); }
+#library-overlay #document-info { font:10px/2 Consolas,monospace; color:var(--theme-muted); margin-top:7px; }
+#library-overlay .empty { padding:45px 20px; text-align:center; color:var(--theme-muted); }
+#library-overlay .empty h2 { font-size:24px; font-weight:400; }
+#library-overlay #empty-main { margin:auto; }
+#library-overlay > footer { height:30px; border-top:1px solid var(--line); display:flex; justify-content:space-between; padding:7px 18px; font:10px Consolas,monospace; }
+#library-overlay #notice { display:none; padding:10px 14px; border:1px solid var(--theme-accent); font-size:12px; margin-bottom:10px; max-height:100px; overflow:auto; }
+#library-overlay #notice.visible { display:block; }
+#library-overlay #dialog { border:1px solid var(--line); background:var(--paper); color:var(--ink); padding:28px; max-width:520px; width:calc(100vw - 48px); margin:auto; }
+#library-overlay #dialog::backdrop { background:#181a1766; }
+#library-overlay #dialog h2 { font-size:20px; }
+#library-overlay #dialog p { line-height:1.8; font-size:13px; }
+#library-overlay #dialog .row { justify-content:flex-end; flex-wrap:wrap; margin-top:22px; }
+@media(max-width:1100px) { #library-overlay { width:calc(100vw - 32px); height:calc(100vh - 40px); } #library-overlay .shell {grid-template-columns:255px minmax(0,1fr);} #library-overlay main{padding:18px;} #library-overlay .header-actions button{font-size:11px;padding:7px;} }
+
+#library-overlay .eyebrow { opacity:1; margin:0; }
+#library-overlay button.solid:hover { background:var(--ink); color:var(--paper); opacity:.85; }

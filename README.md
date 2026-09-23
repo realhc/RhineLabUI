@@ -1,297 +1,288 @@
-# RHINE LAB · ANALYSIS OS
+# RHINE LAB · 本地知识库与三维档案终端
 
-**把莱茵生命的终端，做成可以操作的三维界面。**
+Rhine Lab 是基于《明日方舟》莱茵生命终端视觉制作的非官方交互项目。当前同时保留网页版和 **Windows 本地 Markdown 知识库客户端**。
 
-**[在线体验 → rhine.lubeiluchen.cc](https://rhine.lubeiluchen.cc/)**
+客户端当前版本为 **1.1.1**。首页复用网页版的完整三维阵列、灯光、镜头、开场、详情和模型查看器；知识库通过独立窗口打开。文档保存在程序旁的本地文件夹中，打包后无需安装 Node.js、启动开发服务器或登录账户即可离线使用。
 
-iPhone 可用 Safari 打开在线版，通过“分享 → 添加到主屏幕”安装；从主屏幕图标进入可使用独立窗口。首次联网后，设置中显示“离线资源已就绪”即可离线浏览档案和模型。支持桌面不同比例、手机横竖屏和触摸操作。[安装与更新说明](docs/PWA.md)
+[用户教程](#用户使用教程) · [项目路径](#项目路径) · [技术栈](#项目技术栈) · [开发与构建](#开发与构建) · [AI 开发指引](#面向-ai-的下一步开发指引)
 
-![莱茵生命终端：由透明档案盒构成的三维阵列](docs/media/archive.jpg)
+![客户端三维档案首页](verification/desktop-alignment/desktop-archive.png)
 
-这是对《明日方舟》特别映像「莱茵生命：访问」终端界面的非官方复刻。从白底开场进入五列循环档案阵列，抽取一份档案，等待玻璃与正文解密，再进入独立查看器观察内部结构。
+## 项目路径
 
-项目以原 PV 的 **5–40 秒**为主要视觉与动效参考，实际开场从 **6.76 秒的白色画面**开始；内部结构另参考约 **41 秒及 46–51 秒**的正面与多角度画面。检索、收藏、正文阅读、结构拆解与声音设置是可操作的扩展功能。
+以下为本机路径，移动项目或换电脑后需要调整。
 
-代码由 GPT-6 Astra 协助完成，模型通过 Blender MCP 制作。界面采用 **TypeScript + Three.js + Vite**，运行时实时渲染三维模型，开场由 DOM / SVG 与场景时间轴驱动。
-
-[快速运行](#快速运行) · [界面与动效](#界面与动效) · [操作说明](#操作说明) · [源码与 Blender 工程下载](https://pan.quark.cn/s/762d9ee9dfc3) · [参考原 PV](https://www.bilibili.com/video/BV1rr4y1b7sz/)
-
-## Wallpaper Engine 壁纸与独立仓库
-
-壁纸版已从本项目拆分为独立公共仓库，后续功能在 **[RhineLabWallpaper](https://github.com/LBEILC/RhineLabWallpaper)** 的 `main` 分支开发。本仓库继续维护网页版本；[原壁纸分支 codex/wallpaper-engine](https://github.com/LBEILC/RhineLabUI/tree/codex/wallpaper-engine) 保留迁移记录。需要最新壁纸源码，请前往独立仓库。
-
-**[在 Steam 创意工坊订阅壁纸 → Rhine Lab · 莱茵生命交互桌面](https://steamcommunity.com/sharedfiles/filedetails/?id=3799142774)**
-
-![Wallpaper Engine 工作台预览](wallpaper/preview.gif)
-
-- **两种工作模式**：三维档案展示与桌面工作台，可显示时间日期、今日事项、日程倒计时、系统媒体信息和专注计时。
-- **壁纸交互**：音乐律动、呼吸效果、波纹接力小游戏，以及亮暗配色、玻璃模糊、HUD 曲面与视差。
-- **按需保留画面**：在 WE 属性中选择显示哪些组件；可关闭启动时加载 3D，播放 2D 开场后直接进入工作台，再从左下角手动载入模型。
-- **自定义图片**：关闭 3D 后可显示自行选择的壁纸，支持调整上下遮罩范围，设为 0 即关闭；时钟和媒体信息复用滚动数字与文字效果。
-- **宿主适配**：接入 WE 属性、音频响应、媒体信息、帧率及暂停通知，壁纸资源本地打包，壁纸构建不启用 PWA。
-
-使用壁纸请通过上方创意工坊链接订阅，在 Wallpaper Engine 中应用并调整属性。需要自行构建时：
-
-```sh
-git clone https://github.com/LBEILC/RhineLabWallpaper.git
-cd RhineLabWallpaper
-npm ci
-npm run build:wallpaper
-```
-
-输出目录为 `release/wallpaper`，在 Wallpaper Engine 编辑器中打开其中的 `index.html`。系统媒体信息取决于播放器支持及 WE 媒体集成设置。更多细节见 [壁纸使用与开发说明](docs/WALLPAPER-ENGINE.md) 和 [创意工坊发布说明](docs/WORKSHOP-PUBLISH.md)。
-
-以下为项目共用的网页与三维档案功能介绍。
-
-
-## 新版效果
-
-- **亮暗配色**：设置中切换，卡片依次变色，详情与独立查看器同步适配。
-- **自适应阵列**：按实际镜头与屏幕范围布置、裁剪档案，改善宽屏边角露出尽头；开场铺满实际视口。
-- **超级性能模式**：设置中独立开启，降低三维渲染负担并保留动效，关闭恢复之前的画质。
-- **数字时钟**：页脚时、分、秒独立滚动，修复变换布局下部分数字动画中断。
-
-整合范围与验证见 [主分支整合记录](verification/WEB-INTEGRATION.md)。
-
-- **模型与正文同步解密**：对角解密线合拢、保持并收束，盖板自上而下由磨砂变清晰；右侧文档的遮挡条随之退开，露出标题、资料字段与正文。
-- **可看清的双环内构**：双环、连接带与白色／橙色部件封装在盖板与基板之间。顶边黄色方块、两处螺丝和盖板后的刻线补全了外壳细节。
-- **清晰／磨砂切换**：独立查看器可以随时改变玻璃状态，保留当前视角和拆解位置；支持平滑缩放、平移及复位。
-- **滚动文字与编号**：档案标题、分类、权限标签及编号连续滚动，快速输入衔接最新选择。
-- **重新校准的开场**：逐字输入、圆环绕行、连续 Logo 笔画、身份验证和欢迎转场，按原片逐帧修订轨迹与节奏。
-- **声音与画质设置**：玻璃交互音、系统电子音与三轨循环配乐；音效和音乐可独立开关、调节音量。画质提供四档预设及精细设置。
-
-## 界面与动效
-
-以下截图与动图于 **2026-09-09** 重新采集，均来自当前版本的实际浏览器运行。截图为 **1600 × 900**，GIF 为 **8–12 fps**、原速播放；压缩后的帧率与颜色不代表实时渲染质量。采集版本与复现步骤见 [素材说明](docs/media/README.md)。
-
-### 抽取、解密与阅读
-
-档案竖直升起，镜头靠近并转向详情构图。解密时玻璃与文档一起揭示；完成后可阅读概述、研究记录及访问日志，也可以收藏或导出 UTF-8 文本。
-
-![档案抽取与同步解密：对角线收束，玻璃从上向下变清晰，正文遮挡退开](docs/media/decryption.gif)
-
-| 解密完成 · 清晰内构与档案概述 | 研究记录 · 正文阅读 |
+| 用途 | 路径 |
 | --- | --- |
-| [![解密后的档案：左侧可见双环内构，右侧显示机构资料](docs/media/detail.jpg)](docs/media/detail.jpg) | [![档案研究记录页签](docs/media/research.jpg)](docs/media/research.jpg) |
+| 主项目与交付源码 | `E:\CodexSandbox\Projects\RhineLabUI-main` |
+| 本文件 | `E:\CodexSandbox\Projects\RhineLabUI-main\README.md` |
+| 本机环境说明 | `E:\CodexSandbox\AGENT.md` |
+| 项目开发约束 | `E:\CodexSandbox\Projects\RhineLabUI-main\AGENTS.md` |
+| 原始桌面改造计划 | `E:\CodexSandbox\Projects\RhineLabUI-main\plan.md` |
+| 客户端程序 | `E:\CodexSandbox\Projects\RhineLabUI-main\release\packages\RhineLab-win32-x64\RhineLab.exe` |
+| 1.1.1 便携压缩包 | `E:\CodexSandbox\Projects\RhineLabUI-main\release\packages\make\zip\win32\x64\RhineLab-win32-x64-1.1.1.zip` |
+| 压缩包校验清单 | `E:\CodexSandbox\Projects\RhineLabUI-main\release\packages\make\SHA256SUMS.txt` |
+| 当前交付程序的知识库 | `E:\CodexSandbox\Projects\RhineLabUI-main\release\packages\RhineLab-win32-x64\RhineLabData`，首次启动创建 |
+| 网页开发地址 | `http://127.0.0.1:5173/`，需要开发服务正在运行 |
+| 网页生产构建 | `E:\CodexSandbox\Projects\RhineLabUI-main\dist` |
+| 桌面页面构建 | `E:\CodexSandbox\Projects\RhineLabUI-main\release\desktop\site` |
+| 前次开发与验证工作副本 | `C:\Users\Administrator\Documents\ChatGPT\CodexSandbox\RhineLabUI-desktop` |
 
-### 清晰内构与磨砂玻璃
+**以 E 盘主项目为交付位置。** C 盘工作副本用于前次构建和验证，并非自动同步目录；继续开发前必须比较两边文件，不能直接用旧副本覆盖主项目。
 
-在 360° 查看器中比较两种玻璃状态。切换不会重置镜头或拆解状态，返回详情后仍保留已解密状态。
+在线网页版入口：[rhine.lubeiluchen.cc](https://rhine.lubeiluchen.cc/)。Wallpaper Engine 版本另行维护于 [RhineLabWallpaper](https://github.com/LBEILC/RhineLabWallpaper)，不等同于本地知识库客户端。
 
-| 清晰 · 双环与连接带 | 磨砂 · 轻柔折射 |
-| --- | --- |
-| [![清晰玻璃下的档案内部结构](docs/media/viewer-clear.jpg)](docs/media/viewer-clear.jpg) | [![相同视角下的磨砂玻璃](docs/media/viewer-frosted.jpg)](docs/media/viewer-frosted.jpg) |
+## 用户使用教程
 
-<details>
-<summary><strong>查看动图：清晰／磨砂连续切换</strong></summary>
+### 1. 启动客户端
 
-![玻璃由清晰过渡到磨砂，再恢复清晰](docs/media/glass-motion.gif)
+1. 本机直接打开上述 `RhineLab.exe`。在其他位置使用时，将便携 ZIP **完整解压**到自己有写入权限的目录，再运行其中的 `RhineLab.exe`。
+2. 保留程序旁的 `resources` 等运行文件，不能只复制一个 EXE。
+3. 等待资源载入，点击“点击进入”，进入开场。可以通过 `ENTER SYSTEM` 跳过开场。
+4. 首次初始化时自动导入 40 份示例档案。之后即使删空知识库，也不会再次自动导入。
 
-</details>
+程序不依赖 `127.0.0.1:5173`。该地址只用于网页开发与视觉对照，关闭开发服务器不影响打包客户端。
 
-### 360° 旋转、拆解与重组
-
-紧固件、透明盖板、折射环组、光学核心、信息基板、背板与框架按六组展开。拆解后仍可旋转、平移和缩放，观察部件之间的关系，再一键重组。
-
-[![新版档案模型：六组结构分层展开](docs/media/assembly.jpg)](docs/media/assembly.jpg)
-
-<details>
-<summary><strong>查看动图：模型拆解、旋转与重组</strong></summary>
-
-![操作动图：档案盒从完整状态拆开，旋转观察后连续重组](docs/media/assembly-motion.gif)
-
-</details>
-
-### 循环阵列与滚动标题
-
-五类、每类八份，共 **40 份档案**。上下翻阅、左右切列均可持续循环；切回某列时保留上次选择。选中抬起与阵列波浪同时开始，标题和编号跟随输入滚动；返回阵列时，档案先转正再下降。
-
-<details>
-<summary><strong>查看动图：切列、翻阅与连续文字滚动</strong></summary>
-
-![循环切换档案，标题、编号、分类及刻度同步更新](docs/media/browse.gif)
-
-</details>
-
-### 白底开场
-
-从终端逐字输入到圆环、Logo 绘制，再进入身份接入与权限验证。可以重播，也可以跳过开场直接进入阵列。
-
-[![白底开场中的莱茵生命标志与身份接入文字](docs/media/boot.jpg)](docs/media/boot.jpg)
-
-<details>
-<summary><strong>查看动图：新版开场片段</strong></summary>
-
-![新版白底开场：逐字输入、圆环和连续标志绘制、身份验证与欢迎转场](docs/media/boot-motion.gif)
-
-</details>
-
-### 检索、声音与画质
-
-检索支持编号、标题、英文名、科室、相关人物与分类筛选。收藏和设置保存在当前浏览器中。音效区分档案的玻璃碰触与系统操作的电子反馈，背景配乐随开场、阵列、详情和查看器调整三轨比例。
-
-| 档案索引 · 关键词与分类筛选 | 系统设置 · 声音与画质 |
-| --- | --- |
-| [![输入莱茵关键词后的档案检索结果](docs/media/search.jpg)](docs/media/search.jpg) | [![独立音效和音乐音量、减少动态效果与画质预设](docs/media/settings.jpg)](docs/media/settings.jpg) |
-
-GIF 不含声音。可单独[试听原创配乐「观测室」](public/audio/observatory-preview.mp3)，完整声音效果请启动应用体验。浏览器可能需要一次点击或按键才允许播放音频。
-
-## 快速运行
-
-需要 **Node.js 22.12 或更高版本**（可使用 Node.js 24），以及支持 WebGL 2 的现代桌面浏览器。首次安装依赖需要网络；应用不需要 API Key，也不需要启动后端服务。
-
-### 获取项目
-
-```sh
-git clone https://github.com/LBEILC/RhineLabUI.git
-cd RhineLabUI
-```
-
-也可以从 GitHub 的 **Code → Download ZIP** 下载当前源码，或获取[夸克项目包](https://pan.quark.cn/s/762d9ee9dfc3)。夸克包是 **2026-09-08 的打包快照**，包含源码、运行模型与 Blender 源工程；后续更新以本仓库为准。
-
-### 安装并启动
-
-```sh
-npm ci
-npm run dev
-```
-
-打开终端显示的地址，通常为 `http://127.0.0.1:5173/`。如果端口被占用，以终端实际输出为准。
-
-Windows 用户安装 Node.js 并解压项目后，也可以双击 [`启动终端.cmd`](启动终端.cmd)：首次运行会安装依赖，然后启动本地服务并打开浏览器。
-
-### 构建与预览
-
-```sh
-npm run build
-npm run preview
-```
-
-生产文件输出到 `dist/`，可以交给静态 HTTP 服务托管。请通过服务地址访问，不要直接双击 `dist/index.html`。
-
-## 操作说明
-
-### 终端与档案
+### 2. 浏览三维档案
 
 | 操作 | 效果 |
 | --- | --- |
-| 开场中按 `Enter` / `Esc`，或点击 `ENTER SYSTEM` | 资源就绪后进入交互阵列 |
-| `←` / `→` | 切换档案类别，首尾循环 |
-| `↑` / `↓` | 翻阅同类档案，首尾循环 |
-| `Enter`、`ACCESS FILE` 或文件编号 | 读取当前档案 |
-| 在详情模型上拖动 | 档案获得净空后，旋转观察 |
-| `/` 或 `ARCHIVE INDEX` | 打开检索，可搜索编号、标题、英文名、科室、负责人和分类 |
-| `SAVE ARCHIVE` / `SAVED` | 收藏当前档案 / 查看收藏 |
-| `EXPORT` | 下载当前档案的文本文件 |
-| `Esc` | 关闭当前弹窗，或从详情返回阵列 |
+| `←` / `→` 或底部左右按钮 | 切换阵列列位置 |
+| `↑` / `↓` 或档案导航按钮 | 浏览当前列的档案 |
+| 拖动阵列 | 平面浏览，松手后按速度继续滑动并吸附 |
+| 在阵列上滚动鼠标滚轮 | 切换档案 |
+| `ACCESS FILE` 或文件编号 | 读取选中档案 |
+| 详情页 `EDIT` | 打开该文档的本地编辑窗口 |
+| `SAVE ARCHIVE` | 收藏当前档案 |
+| `SAVED` | 打开知识库的收藏列表 |
+| `Esc` | 返回或关闭当前窗口；编辑窗口会先处理未保存内容 |
+| `REINITIALIZE` | 重播开场 |
 
-### 独立模型查看器
+阵列有 **40 个逻辑展陈槽位**，背景会循环显示；完整知识库的文档数量不受 40 篇限制。打开展陈范围之外的文档后，它会被映射到展陈槽位。空槽位会显示新建提示。按真实分类查找文档，请使用知识库窗口的分类筛选。
 
-在详情页点击 **「360° 查看文档模型」** 进入。
+详情页的“360° 查看文档模型”提供拖动旋转、滚轮缩放、方向键平移、玻璃清晰/磨砂切换、拆解和一键重组。关闭查看器返回档案。
 
-| 操作 | 效果 |
+### 3. 新建、编辑与保存
+
+1. 点击顶部 **ARCHIVE INDEX**，或在阵列界面按 `/`，打开本地知识库。
+2. 点击左上角“＋ 新建”，填写文档标题和分类。
+3. 在源码区输入 Markdown；选择“源码”“分栏”或“阅读”切换显示方式。
+4. 点击“保存”或按 `Ctrl+S`，确认底部状态显示已保存。
+5. 点击 `CLOSE` 返回三维界面。切换文档或关闭编辑窗口时，有未保存修改会提示保存、放弃或取消。
+
+编辑器支持标题、列表、引用、代码块、链接与表格。例如：
+
+```markdown
+# 项目笔记
+
+## 今天的记录
+
+- 完成第一份本地文档
+- 整理研究资料
+
+> 需要继续验证的想法。
+
+| 事项 | 状态 |
 | --- | --- |
-| 鼠标拖动 | 环绕旋转模型 |
-| 滚轮、`+` / `−` | 平滑缩放 |
-| 方向键 | 平移观察位置 |
-| 「复位视角」或 `Home` | 平滑恢复初始观察位置 |
-| 「清晰」 / 「磨砂」 | 切换玻璃状态，保留视角和拆解位置 |
-| 「拆解档案」 / 「一键重组」 | 展开六组部件 / 连续收回 |
-| `Esc` 或「返回档案」 | 关闭查看器，返回原档案 |
-
-### 显示与偏好
-
-布局以 **1920 × 1080** 为基准等比例适应窗口，主要面向桌面与横向屏幕。设置页提供音效与背景音乐的独立开关、独立音量，以及完整、减少或自定义动画、画质、全屏和重新播放开场。动画选择由本站设置控制，收藏和偏好保存在当前浏览器中。
-
-首次载入需要加载字体与 GLB 模型。项目保留了四份官方 MiSans WOFF2，合计约 19.7 MB，按实际使用加载。画质预设为**性能、原始、高、极高**，默认使用原始；精细设置可调整渲染比例、像素密度、抗锯齿、纹理过滤、透明材质分辨率、阴影、环境遮蔽及景深。运行不够流畅时可选性能档；需要简化镜头、文字与揭示动画时，可启用减少动态效果。
-
-## 工程结构
-
-| 目录或文件 | 内容 |
-| --- | --- |
-| [`src/main.ts`](src/main.ts) | 页面状态、档案阅读、检索、收藏与快捷键 |
-| [`src/boot.ts`](src/boot.ts)、[`src/boot-motion.ts`](src/boot-motion.ts) | 开场界面与逐帧时间轴 |
-| [`src/scene.ts`](src/scene.ts)、[`src/archive-loop.ts`](src/archive-loop.ts) | Three.js 场景、循环阵列、抽取与归位 |
-| [`src/model-viewer.ts`](src/model-viewer.ts) | 独立模型查看器与拆解动画 |
-| [`src/decryption.ts`](src/decryption.ts)、[`src/document-decryption.ts`](src/document-decryption.ts) | 模型解密轨迹与正文同步揭示 |
-| [`src/audio.ts`](src/audio.ts)、[`public/audio/`](public/audio/) | 交互音效、三轨配乐与音源记录 |
-| [`src/render-quality.ts`](src/render-quality.ts)、[`src/quality-renderer.ts`](src/quality-renderer.ts) | 画质预设与渲染管线 |
-| [`content/archives.json`](content/archives.json) | 页面与下载共用的五类、40 份档案数据 |
-| [`src/data.ts`](src/data.ts) | 档案类型与阵列位置映射 |
-| [`public/assets/`](public/assets/) | 运行所需的 GLB 模型 |
-| [`public/archives/`](public/archives/) | 导出的档案文本；启动和构建前自动生成 |
-| [`art/`](art/) | Blender 源文件、建模与审阅脚本 |
-| [`scripts/`](scripts/) | 档案导出与行为检查 |
-| [`reference/`](reference/)、[`verification/`](verification/) | 开发对照工具与分阶段验证记录 |
-| [`docs/media/`](docs/media/) | README 截图与动图 |
-| [`DESIGN.md`](DESIGN.md) | 视觉、相机、材质与运动约束 |
-
-原片时间轴使用 160 个阵列位置；交互模式使用固定的可见窗口与外围卡片补位，让有限的档案内容可以持续循环。
-
-### 修改与复核
-
-修改档案内容从 [`content/archives.json`](content/archives.json) 入手，字段与操作步骤见 [档案修改说明](content/README.md)。`npm run dev` 与 `npm run build` 会先校验数据，再更新 `public/archives/` 中的文本导出；开发过程中修改数据后，可执行 `npm run export:archives` 同步下载文件。`npm run check:content` 检查数据规则与导出一致性。
-
-```sh
-node scripts/check-motion.mjs
-node scripts/check-loop.mjs
-node scripts/check-appearance.mjs
-node scripts/check-assembly.mjs
-node scripts/check-decryption.mjs
-node scripts/check-shell.mjs
-node scripts/check-internal-optics.mjs
-node scripts/check-quality.mjs
+| 文档整理 | 进行中 |
 ```
 
-这些脚本检查运动、循环位置、外观、装配结构、解密轨迹、外壳、内构与画质参数。视觉效果仍需在浏览器中实际查看，尤其是快速切换、模型归位、文档揭示及查看器进出过渡。
+预览禁用原始 HTML 和脚本。HTTP/HTTPS 外链通过系统浏览器打开。当前版本尚不支持图片附件管理，不会自动载入 Markdown 中的图片。
 
-| 本地调试路径 | 用途 |
+编辑窗口内可使用 `Ctrl+N` 新建、`Ctrl+F` 聚焦全文搜索；在源码区用 `Ctrl+B` / `Ctrl+I` 添加粗体或斜体标记。常用格式也可通过工具栏插入。
+
+### 4. 搜索、分类和排序
+
+- 搜索框匹配标题、分类和正文，适用于完整知识库。
+- 分类下拉框只显示选定分类的文档。
+- “全部”“收藏”“回收区”分别切换列表范围。
+- 排序可选择手动顺序、标题或最近修改。
+- 手动顺序模式下拖动列表中的文档调整位置，顺序写入 Markdown 元数据，重启后保留。
+
+### 5. 删除与恢复
+
+选中文档后点击“移入回收区”，确认后进入回收区。误删时切到“回收区”，选择文档并点击“恢复”。回收区中的文档为只读；“永久删除”需再次确认，不能通过回收区恢复。
+
+### 6. 找到本地文件、备份和迁移
+
+在知识库窗口点击“打开知识库文件夹”，可以查看程序旁的 `RhineLabData`：
+
+```text
+RhineLab-win32-x64/
+├─ RhineLab.exe
+├─ resources/
+└─ RhineLabData/
+   ├─ documents/       # 正常文档，每篇一个 .md 文件
+   ├─ .trash/          # 回收区
+   └─ backups/         # 写入前的历史备份
+```
+
+文档使用 UTF-8 Markdown。文件头保存稳定 ID、标题、分类、排序和时间，正文保留原始 Markdown。修改标题不会修改稳定 ID 文件名。文档内容不依赖浏览器缓存；收藏和界面偏好单独保存。
+
+可以使用其他 Markdown 工具编辑这些文件。客户端会监听外部变化，也可点击“刷新”。若磁盘版本与未保存内容冲突，界面会提供另存副本或放弃并重新载入的选择。
+
+**备份或搬迁：** 先关闭程序，复制整个程序目录及其中的 `RhineLabData`。仅备份文档时至少保留完整 `RhineLabData`；它不包含全部界面偏好，偏好和收藏可在设置中另行导出 JSON。
+
+**更新程序：** 先退出客户端并备份 `RhineLabData`，再用新版本替换程序文件，保留原有 `RhineLabData`。不要删除整个旧目录后再解压。当前没有自动更新功能。
+
+遇到目录不可写的提示时，将整个程序目录移到可写位置；应用不会静默将文档改存到其他位置。不要将知识库目录改成符号链接或目录联接。
+
+### 7. 显示、声音与偏好迁移
+
+顶部“设置”提供亮暗配色、音效和音乐音量、画质、完整/减少/自定义动画以及全屏。运行不够流畅时可启用“超级性能模式”，它与减少动画分别控制。客户端支持 `F11` 切换全屏，`Esc` 退出全屏。
+
+设置中可以导出和导入偏好与收藏 JSON，文件上限为 1 MB。导入会替换当前偏好与收藏；文件不包含 Markdown 正文。网页与客户端的示例编号相同，因此示例收藏可以迁移。
+
+### 网页版与客户端的区别
+
+| 项目 | Windows 客户端 | 网页版 |
+| --- | --- | --- |
+| 主视觉与三维交互 | 复用现有网页场景 | 原始视觉基准 |
+| 文档来源 | 程序旁的 Markdown 文件 | 静态 40 份演示档案 |
+| 新建、编辑、回收区 | 支持 | 不提供本地知识库写入 |
+| ARCHIVE INDEX | 完整知识库与全文搜索 | 演示档案检索 |
+| 详情操作 | EDIT 编辑本地文档 | EXPORT 导出 TXT |
+| 离线方式 | 本地打包资源 | PWA 缓存，见 [PWA 说明](docs/PWA.md) |
+| 启动方式 | 运行 EXE | 在线地址或本地开发服务 |
+
+## 项目技术栈
+
+下表版本依据当前 `package.json` 声明；精确安装版本以 `package-lock.json` 为准。
+
+| 层次 | 技术 | 用途 |
+| --- | --- | --- |
+| 界面语言 | TypeScript 5.9、原生 HTML / CSS | 页面状态、布局与交互，无 React/Vue |
+| 三维渲染 | Three.js 0.183、WebGL 2 | GLB 阵列、玻璃材质、灯光、镜头与查看器 |
+| 开场与动画 | 原生 DOM / SVG、Web Animations、场景时间轴 | 开场、解密、界面过渡 |
+| 文字动画 | `@kitlangton/rolling-number` 0.4.1 | 数字、标题和时钟滚动 |
+| Markdown | markdown-it 15 | 安全阅读预览 |
+| 桌面宿主 | Electron 44 | Windows 窗口、应用内协议与受限 IPC |
+| 本地仓库 | Node.js 文件系统、Markdown front matter | 原子写入、修订检查、回收区、备份与文件监听 |
+| 构建 | Vite 7 | 网页与桌面模式分别构建 |
+| 打包 | Electron Forge 7、ZIP maker | Windows x64 便携目录与 ZIP |
+| 验证 | Node.js assert/test、Playwright | 数据、布局和实际 Electron 交互回归 |
+| 美术资产 | Blender、Blender MCP、GLB | 模型制作与可复现资产生成 |
+| 字体 | MiSans、项目既有开场回退字形 | 界面文字；Novecento 未纳入桌面分发 |
+
+桌面渲染进程不开启 Node 集成，使用上下文隔离与沙箱。页面通过 `preload` 暴露的有限接口访问仓库；主进程校验 IPC 来源、文档 ID 和外链。生产页面使用应用内 `rhine://app` 地址，资源随包离线加载。
+
+## 开发与构建
+
+以下命令在项目根目录执行。开发需要 Node.js 和 npm；本机使用 Node.js 24，Windows PowerShell 使用 `npm.cmd`，避免调用被执行策略阻止的 `npm.ps1`。工具路径见 `E:\CodexSandbox\AGENT.md`。
+
+```powershell
+Set-Location 'E:\CodexSandbox\Projects\RhineLabUI-main'
+npm.cmd ci
+```
+
+首次安装依赖及下载 Electron 需要联网。普通运行和构建现有资产不需要安装 Blender。
+
+| 命令 | 用途 / 输出 |
 | --- | --- |
-| `/?scene=archive` | 直接进入档案阵列 |
-| `/?scene=detail` | 直接进入档案详情 |
-| `/?time=28&freeze=1` | 固定在参考时间轴的指定时刻 |
-| `/reference/review.html`、`/reference/boot-review.html` | 原片与复刻对照工具 |
-| `/reference/decryption-review.html` | 玻璃解密逐帧对照 |
-| `/reference/document-decryption-check.html` | 正文同步解密与布局检查 |
-| `/reference/boot-audio.html` | 完整开场声音试听 |
+| `npm.cmd run dev` | 启动网页开发服务 |
+| `npm.cmd run dev:desktop` | 启动桌面模式 Vite 服务及 Electron 开发窗口 |
+| `npm.cmd run build` | 构建网页和 PWA，输出 `dist/` |
+| `npm.cmd run preview` | 预览网页生产构建，以终端输出的 URL 为准 |
+| `npm.cmd run build:desktop` | 类型检查并构建桌面页面，输出 `release/desktop/site/` |
+| `npm.cmd run package:desktop` | 构建、打包 Windows x64 便携目录、ZIP 和 SHA-256 清单 |
+| `npm.cmd run check:content` | 校验网页示例内容及 TXT 导出 |
+| `npm.cmd run check:desktop` | 校验 Markdown 仓库与文件安全边界 |
+| `npm.cmd run check:desktop:exhibit` | 校验桌面展陈映射与空库/超额文档 |
+| `npm.cmd run check:desktop:ui` | 对当前已打包程序运行实际 Electron 回归 |
 
-原 PV 不随仓库分发。使用视频对照工具时，需要自行准备对应参考视频；正常运行应用不依赖它。
+当前 `dev:desktop` 固定使用 `127.0.0.1:5173`，且要求该端口空闲。如果网页开发服务正在占用它，请先结束该服务，或使用已经打包的客户端进行对照；不要连接一个并非桌面模式的 Vite 服务冒充桌面开发环境。
 
-### Blender 源工程
+开发模式的文档目录是项目根目录的 `RhineLabData`。打包模式使用 EXE 旁的 `RhineLabData`。`build:desktop` 只生成页面，不会更新已有 EXE 目录；需要运行 `package:desktop` 才能交付新程序。
 
-| 文件 | 用途 |
+`check:desktop:ui` 依赖 `release/packages/RhineLab-win32-x64` 和已保存的视觉基准 `verification/desktop-alignment/web-reference.json`。它复制程序到隔离测试目录，不应对真实知识库执行测试。源码变更后必须先重新打包，避免测试到旧程序。
+
+## 工程入口
+
+| 文件或目录 | 职责 |
 | --- | --- |
-| [`art/rhine-archive.blend`](art/rhine-archive.blend) | 档案盒基础模型与审阅灯光 |
-| [`art/archive-assembly.blend`](art/archive-assembly.blend) | 可按六组结构拆解的模型 |
-| [`art/build_archive.py`](art/build_archive.py) | 生成基础模型与 GLB |
-| [`art/build_assembly.py`](art/build_assembly.py) | 生成拆解模型与 GLB |
-| [`art/internal_architecture.py`](art/internal_architecture.py) | 当前双环内构与连接带 |
-| [`art/shell_reference_details.py`](art/shell_reference_details.py) | 顶边方块、螺丝及盖板后刻线 |
-| [`art/setup_studio.py`](art/setup_studio.py) | 配置资产审阅灯光与相机 |
+| `index.html`、`src/main.ts` | 网页入口及页面状态 |
+| `desktop.html`、`src/desktop-entry.ts` | 桌面入口：先读取本地仓库，再启动界面 |
+| `src/desktop-main.ts` | 网页交互入口的桌面适配，保留同一视觉与场景模块 |
+| `src/desktop.ts`、`src/desktop.css` | 知识库窗口、编辑预览、搜索、排序与冲突提示 |
+| `src/desktop-data.ts` | 完整文档列表到 40 个展陈槽位的映射与当前文档保持 |
+| `src/desktop-markdown.ts` | 详情页本地 Markdown 安全渲染 |
+| `src/desktop-api.d.ts` | 渲染端桌面 API 类型 |
+| `desktop/main.mjs` | Electron 窗口、协议、权限、IPC 和退出处理 |
+| `desktop/preload.cjs` | 受限桥接 API，渲染端使用 `window.rhine` |
+| `desktop/repository.mjs` | 文件仓库、原子写入、修订、备份、回收区及监听 |
+| `src/data.ts`、`content/archives.json` | 网页演示档案数据 |
+| `src/scene.ts`、`src/archive-loop.ts` | 共享三维阵列、运动和循环位置 |
+| `src/boot.ts`、`src/boot-motion.ts` | 共享开场图形和时间轴 |
+| `src/model-viewer.ts` | 独立模型查看器 |
+| `src/style.css`、`src/responsive.css` | 原网页视觉与响应式布局 |
+| `vite.config.ts` | 模式分离、模型资源版本化；仅桌面模式替换数据模块解析 |
+| `forge.config.cjs`、`scripts/prepare-desktop.mjs` | 打包清单、资源整理及许可材料 |
+| `public/`、`art/` | 运行资源、Blender 源工程和生成脚本 |
+| `docs/`、`verification/` | 使用文档、设计说明和验收证据 |
 
-普通运行直接使用现有 GLB 即可，无需安装 Blender。重新建模时，可在 Blender 的脚本环境中通过 `runpy.run_path()` 执行对应脚本，或通过 Blender MCP 调用。脚本根据自身位置确定项目目录，重新生成会更新对应模型输出。
+## 面向 AI 的下一步开发指引
 
-## 参考与资源说明
+### 先读取，再确定本次范围
 
-参考作品为《明日方舟》特别映像「莱茵生命：访问」：[BV1rr4y1b7sz](https://www.bilibili.com/video/BV1rr4y1b7sz/)。本项目与官方制作方无隶属关系，原 PV、相关名称、标志与设定的权利归各自权利人所有。原片未展示的档案摘要、日期、研究记录等属于本项目的扩展演示内容。
+1. 读取 `E:\CodexSandbox\AGENT.md`，确认本机工具与权限条件。
+2. 读取项目 `AGENTS.md`、`plan.md` 和本 README；涉及视觉时继续读取 `DESIGN.md`。
+3. 阅读 [桌面说明](docs/DESKTOP.md)、[最新视觉对齐验收](verification/DESKTOP-ALIGNMENT.md) 和 `verification/desktop-alignment/result.json`。较早的 [桌面验收](verification/DESKTOP.md) 用于了解历史实现，不应当作当前 UI 基准。
+4. 检查实际 Git 分支、未提交修改、源码和发行包时间。前次交付没有完成 Git 提交，不能根据文件存在就推断已提交、合并或发布。
+5. 以用户本次需求定义完成标准；下述路线是建议，不是自动获得的发布或大规模重构授权。
 
-模型为重新制作；实时折射、景深、灯光与局部细节和原 PV 仍有差异。身份验证画面是演示状态机，不连接真实身份或业务服务。
+### 必须保持的边界
 
-- **MiSans**：使用小米官方字体文件，保留[字体许可](public/fonts/MiSans-license.pdf)及字体目录内的版权说明，设置页也提供署名与许可入口。
-- **Rolling Number**：用于编号和文字滚动，许可见 [`public/licenses/rolling-number.txt`](public/licenses/rolling-number.txt)。
-- **声音**：三轨配乐为本项目程序编配；逐字输入使用原 PV 的三个 38ms 短音，来源与处理记录见 [音频说明](public/audio/README.md)。原片短音及其衍生片段不纳入原创配乐的 MIT 授权声明。
-- **其他依赖**：各自遵循其原有许可。源码公开不改变第三方资源的权利。
+- **用户最新要求：客户端效果与网页版一致，不要修改网页版。** 保持网页入口、静态内容、样式与动画；优先在 `desktop-*` 文件及桌面宿主内实现需求。
+- `src/scene.ts`、`src/boot.ts` 等是共享模块，修改它们会影响网页版。若需求确实需要更改共享行为，先明确影响范围，不能将桌面修复直接写成网页视觉变化。
+- 不重新设计独立客户端首页，不恢复绿色双栏首页或简化小阵列。知识库样式限定在 `#library-overlay`，不能污染全局按钮、正文、主题与布局。
+- 沿用原生实现流程，不启用前端设计或动效 Skill 重做界面。新美术资源按项目约束通过 Blender MCP 制作并保留源工程与脚本。
+- 保留已确认的原始灯光、波浪、惯性、循环和镜头规则：抽取只作竖直升降；镜头负责构图；收回时先转正再下降。
+- Markdown 文件是文档事实来源；按稳定 ID 定位，不能把数组下标当文档身份，不能将内容仅写入 localStorage。
+- 不删除、覆盖或打包真实 `RhineLabData`；测试使用隔离目录。保留原子写入、修订冲突检查、路径及链接校验、回收区事务恢复。
+- `window.rhine` 是桌面桥接接口；客户端调试控制为 `window.rhineReview`，网页调试控制仍为 `window.rhine`，不要覆盖 preload 暴露的属性。
+- 保持桌面禁用 PWA、外链交给系统浏览器、Node 隔离和受限 IPC；不能为解决加载问题而放开任意文件或网络访问。
+- 同步 E/C 两个目录时逐项比较，只同步本次文件并核对哈希；不得使用整目录镜像删除覆盖用户数据。不要自动发布、推送或清理已有改动。
 
-源码包包含运行代码、模型、Blender 工程、说明与验证脚本，不包含依赖目录、本机缓存、原 PV 或完整录制素材。
+### 建议的下一步顺序
 
-## 开源许可
+| 优先级 | 建议工作 | 完成判据 |
+| --- | --- | --- |
+| P1 | 补齐动态文档与展陈语义：当前列名沿用原始五列，用户分类由完整列表筛选 | 明确任意分类、手动排序、空槽和展示子集的规则；稳定 ID 与选择连续，不改变原始阵列视觉 |
+| P1 | 扩大视觉回归到开场关键帧、详情、360° 查看器、亮暗主题及不同 DPI | 同尺寸、同设置、同时间点比较网页与客户端，保留截图及差异说明；不靠更新基准掩盖回归 |
+| P1 | 完善编辑工作流验收：外部修改时的未保存草稿、关闭程序、拖动排序和键盘操作 | 真实打包程序中复现并验证，保存状态与磁盘内容一致，编辑输入不传到底层场景 |
+| P2 | 评估 `desktop-main.ts` 与 `main.ts` 的重复维护问题 | 先给出最小适配方案；仅在获准调整共享结构后实施，并证明网页行为和画面不变 |
+| P2 | 评估图片附件、文档历史恢复界面、分类管理等新能力 | 先确定用户需求与文件格式，再实现目录边界、相对路径、迁移和恢复，不假定首版已经支持 |
+| 发布前 | 完成素材许可、Windows 签名与不同硬件/睡眠恢复检查 | 有实际证据与明确发布范围；当前未签名测试包不能当成已完成正式发布 |
 
-本项目自行编写且有权授权的程序代码、建模脚本及配套技术文档采用 [MIT License](LICENSE)，版权署名为 **Copyright (c) 2026 LBEILC**。你可以使用、修改、分发这些内容，也可以将其用于商业或闭源项目；分发代码或其重要部分时，须保留版权声明和许可证。软件按原样提供，不作担保，具体以许可证全文为准。
+### 每次交付怎样验证
 
-MIT 授权不覆盖第三方权利或自动覆盖仓库内全部素材：
+先运行与改动相关的检查。涉及桌面入口、数据或交互时，通常执行：
 
-- 《明日方舟》及莱茵生命相关名称、标志、设定、原 PV 和原作视觉设计，以及它们在模型、界面、截图或演示文本中的呈现，不因本项目公开而获得额外授权。本项目无法代替相应权利人授予这些权利。
-- Blender / GLB 模型、图像、动图等非代码资产未另行声明为 MIT；建模脚本采用 MIT 不表示脚本生成的原作相关视觉内容也已获授权。
-- MiSans、Rolling Number 及其他第三方依赖继续遵循各自的许可证和版权声明，见上方「参考与资源说明」。
+```powershell
+npm.cmd run check:content
+npm.cmd run check:desktop
+npm.cmd run check:desktop:exhibit
+npm.cmd run build
+npm.cmd run package:desktop
+npm.cmd run check:desktop:ui
+```
 
-复用代码时，请根据用途处理涉及的第三方素材与标志。GitHub 当前源码包已包含本许可证；上方夸克链接为早期打包快照，未包含本次新增的项目许可证文件，最新许可说明以本仓库为准。
+视觉变更需要实际启动当前构建，在相同视口与偏好下对照网页。网页源码是否保持不变可结合 Git diff 和 `verification/desktop-alignment/web-source-hashes.json` 核对；该文件是 1.1.1 时的历史基准，后续经用户授权更新网页后需要重新评估。
+
+交付前记录：修改范围、检查结果、实际运行程序路径、版本与 ZIP 校验值、已知限制，以及用户数据是否保留。更新 `verification/` 中相应记录。纯文档修改只检查内容、链接和命令准确性，不必重新打包应用。
+
+前次环境曾出现沙箱 ACL 启动故障及部分 Node 24 进程原生崩溃。遇到类似问题，应区分环境故障和应用错误，记录实际错误；不要把失效的工具路径写死为通用方案，也不要绕过审批。
+
+## 当前验证范围与限制
+
+1.1.1 已通过首页布局对照、真实客户端新建/保存/搜索/删除恢复、未保存取消/放弃、键盘隔离、重启持久化、1000×680 窗口、空库/单篇/超过 40 篇文档及离线资源检查。原网页构建、PWA 和仓库测试通过。详细证据见 [视觉对齐验收](verification/DESKTOP-ALIGNMENT.md)。
+
+当前交付为 Windows x64 便携测试构建，尚未签名；没有云同步、自动更新或图片附件管理。未宣称完成所有 Windows 硬件、多显示器及睡眠恢复验收。开场 Novecento 字体未确认桌面再分发范围，因此使用项目已有回退字形。
+
+## 参考、资源与许可
+
+本项目参考《明日方舟》特别映像「莱茵生命：访问」的终端视觉，原 PV 仅用于参考与验证，不作为产品播放背景，也不随源码分发。原片未展示的部分档案正文为扩展演示内容。正常运行直接加载项目现有 GLB，无需参考视频或 Blender。
+
+项目自行编写且有权授权的程序代码、建模脚本和技术文档采用 [MIT License](LICENSE)，版权署名见许可证。MIT 不自动覆盖原作名称、标志、设定、原 PV、模型图像等非代码资产或第三方字体。MiSans 和依赖库保留各自许可；原片短音与衍生片段不属于原创配乐的 MIT 声明范围。
+
+资源与分发说明见 [桌面许可材料](docs/DESKTOP-LICENSES.md)、[音频说明](public/audio/README.md) 和 [MiSans 许可](public/fonts/MiSans-license.pdf)。网页历史截图及动图见 [媒体说明](docs/media/README.md)，Blender 模型与生成脚本保存在 `art/`。

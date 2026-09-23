@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "security": {
+    "sandbox": true,
+    "nodeIntegration": false,
+    "contextIsolation": true
+  },
+  "checks": [
+    "40 samples",
+    "41+ documents",
+    "safe Markdown table/code/quote",
+    "file persistence",
+    "search body",
+    "favorite",
+    "drag order",
+    "trash restore",
+    "external edits",
+    "conflict copy",
+    "audio decode",
+    "WebGL2",
+    "F11 Escape",
+    "IPC rejection",
+    "no remote requests",
+    "restart and move portable",
+    "0/1/7 document arrays"
+  ],
+  "errors": [],
+  "failed": []
+}

@@ -1,0 +1,4 @@
+.local-markdown { overflow-wrap: anywhere; }
+.local-markdown pre { overflow: auto; padding: 16px; background: var(--theme-field); }
+.local-markdown table { border-collapse: collapse; width: 100%; }
+.local-markdown td, .local-markdown th { padding: 8px; border: 1px solid var(--theme-line); }

@@ -1,4 +1,5 @@
-export const isWallpaper = import.meta.env.MODE === "wallpaper";
+import { platform } from "./platform";
+export const isWallpaper = platform === "wallpaper";
 if (isWallpaper) document.documentElement.dataset.wallpaper = "true";
 export type WallpaperProperties = Record<string, { value: unknown }>;
 declare global {

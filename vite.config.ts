@@ -14,11 +14,18 @@ const hasNovecento = ["Normal", "DemiBold", "Bold"].every(weight =>
 );
 export default defineConfig(({ mode }) => ({
   base: mode === "wallpaper" ? "./" : "/",
+  build: mode === "desktop" ? { outDir: "release/desktop/site", rollupOptions: { input: "desktop.html" } } : undefined,
   define: {
     __RHINE_MODELS__: JSON.stringify(Object.fromEntries(models.map(model => [model.key,model.fileName]))),
-    __RHINE_NOVECENTO__: JSON.stringify(hasNovecento),
+    __RHINE_NOVECENTO__: JSON.stringify(mode !== "desktop" && hasNovecento),
   },
-  plugins: [{
+  plugins: [...(mode === "desktop" ? [{
+    name: "desktop-library-data", enforce: "pre" as const,
+    resolveId(source: string, importer: string | undefined) {
+      if (importer && /\/src\//.test(importer.replaceAll("\\", "/")) && /^\.\/data(?:\.ts)?$/.test(source))
+        return new URL("./src/desktop-data.ts", import.meta.url).pathname.replace(/^\/(\w:)/, "$1");
+    },
+  }] : []), {
     name: "versioned-model-assets", apply: "build",
     buildStart() { for (const model of models) this.emitFile({type:"asset",fileName:model.fileName,source:model.source}); },
   }, ...(mode === "wallpaper" ? [{

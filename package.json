@@ -1,10 +1,21 @@
 {
   "name": "rhine-lab-analysis-os",
-  "version": "1.0.0",
+  "version": "1.1.1",
+  "description": "Rhine Lab portable local Markdown knowledge base",
+  "author": "Rhine Lab contributors",
+  "main": "desktop/main.mjs",
+  "config": {
+    "forge": "./forge.config.cjs"
+  },
   "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
+    "dev:desktop": "node scripts/dev-desktop.mjs",
+    "build:desktop": "tsc && vite build --mode desktop && node scripts/prepare-desktop.mjs",
+    "package:desktop": "npm run build:desktop && electron-forge make --platform win32 --arch x64 && node scripts/checksum-desktop.mjs",
+    "check:desktop": "node scripts/check-desktop-repository.mjs",
+    "check:desktop:ui": "node scripts/check-desktop-alignment.mjs",
     "postinstall": "node scripts/patch-rolling-number.mjs",
     "predev": "node scripts/patch-rolling-number.mjs && node scripts/export-records.mjs",
     "dev": "vite --host 127.0.0.1",
@@ -17,17 +28,23 @@
     "build:cloudflare": "npm run build && node scripts/package-cloudflare.mjs",
     "build:wallpaper": "node scripts/patch-rolling-number.mjs && node scripts/export-records.mjs && tsc && vite build --mode wallpaper --outDir release/wallpaper && node scripts/build-wallpaper.mjs",
     "format": "prettier --write src scripts index.html package.json tsconfig.json",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "check:desktop:exhibit": "node --experimental-strip-types scripts/check-desktop-exhibit.mjs"
   },
   "dependencies": {
     "@kitlangton/rolling-number": "0.4.1",
+    "markdown-it": "^15.0.2",
     "three": "^0.183.0"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
+    "@types/markdown-it": "^14.2.0",
     "@types/three": "^0.183.0",
+    "electron": "^44.4.3",
+    "playwright": "^1.63.0",
     "prettier": "^3.9.6",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   }
 }
-

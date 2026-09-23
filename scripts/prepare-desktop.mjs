@@ -1,0 +1,65 @@
+import { readFile, writeFile, mkdir, rm, copyFile } from "node:fs/promises";
+// A PNG-compressed ICO is supported by Windows Vista and newer.
+await mkdir("desktop", { recursive: true });
+const png = await readFile("public/icons/icon-192.png");
+const header = Buffer.alloc(22);
+header.writeUInt16LE(1, 2);
+header.writeUInt16LE(1, 4);
+header[6] = 192;
+header[7] = 192;
+header.writeUInt16LE(1, 10);
+header.writeUInt16LE(32, 12);
+header.writeUInt32LE(png.length, 14);
+header.writeUInt32LE(22, 18);
+await writeFile("desktop/icon.ico", Buffer.concat([header, png]));
+const site = "release/desktop/site";
+// These paths are generated desktop build output only, never the source assets.
+for (const path of [
+  "fonts/novecento",
+  "audio/typing-preview.wav",
+  "audio/typing-source.json",
+  "audio/observatory-preview.mp3",
+  "sw.js",
+  "manifest.webmanifest",
+  "_headers",
+  "_redirects",
+])
+  await rm(`${site}/${path}`, { recursive: true, force: true });
+await copyFile("LICENSE", `${site}/LICENSE`);
+await copyFile("docs/DESKTOP-LICENSES.md", `${site}/DESKTOP-LICENSES.md`);
+const notices = [];
+for (const name of [
+  "three",
+  "@kitlangton/rolling-number",
+  "markdown-it",
+  "argparse",
+  "entities",
+  "linkify-it",
+  "mdurl",
+  "punycode.js",
+  "uc.micro",
+]) {
+  const pkg = JSON.parse(
+    await readFile(`node_modules/${name}/package.json`, "utf8"),
+  );
+  let license;
+  for (const file of [
+    "LICENSE",
+    "LICENSE.md",
+    "LICENSE.txt",
+    "LICENSE-MIT.txt",
+  ]) {
+    try {
+      license = await readFile(`node_modules/${name}/${file}`, "utf8");
+      break;
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+  if (!license) throw new Error(`Missing dependency license: ${name}`);
+  notices.push(`${name} ${pkg.version}\n${license}`);
+}
+await writeFile(
+  `${site}/THIRD-PARTY-NOTICES.txt`,
+  notices.join("\n\n----------------------------------------\n\n"),
+);

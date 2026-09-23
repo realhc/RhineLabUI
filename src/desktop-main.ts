@@ -1,3 +1,4 @@
+// Desktop adaptation of the unchanged website entry. Shared scene, styles and animation modules remain authoritative.
 import { createRollingClock } from "./rolling-clock";
 import { InspectionOverlay } from "./inspection-overlay";
 import { DocumentDecryption } from "./document-decryption";
@@ -14,7 +15,10 @@ import "./quality-settings.css";
 import "./responsive.css";
 import { viewportLayout, openingLayout } from "./viewport-layout";
 import { assetUrl } from "./asset-url";
-import { initPwa, pwaSettingsMarkup } from "./pwa";
+import { desktopDocuments, setDesktopDocuments, exhibitDocument, documentForRecord, displayCode } from "./desktop-data";
+import { openLibrary } from "./desktop";
+import { renderMarkdown } from "./desktop-markdown";
+let libraryVisible = false;
 import { createRollingNumber, createRollingText } from "@kitlangton/rolling-number";
 import { ArchiveScene } from "./scene";
 import { ModelViewer } from "./model-viewer";
@@ -177,6 +181,8 @@ const prefs = {
 };
 const motionActive = (key: MotionKey) => motionEnabled(prefs.motion, key);
 function exportPreferences() {
+  void window.rhine.exportPreferences(JSON.stringify({ version: 1, settings: prefs, saved: [...saved] }, null, 2)).catch(error => notify(String(error)));
+  return;
   const blob = new Blob([JSON.stringify({ version: 1, settings: prefs, saved: [...saved] }, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -195,7 +201,7 @@ function importPreferences() {
     try {
       if (file.size > PREFERENCES_MAX_BYTES) throw new Error("设置文件不能超过 1 MB。");
       const transfer = parsePreferencesTransfer(await file.text());
-      const knownIds = new Set(records.map(record => record.id));
+      const knownIds = new Set(desktopDocuments.map(record => record.id));
       const importedSaved = transfer.saved.filter(id => knownIds.has(id));
       const omitted = transfer.saved.length - importedSaved.length;
       if (!window.confirm(`将替换当前设置与收藏并重新载入页面。${omitted ? `其中 ${omitted} 个客户端文档编号不在网页档案中，将被忽略。` : ""}是否继续？`)) return;
@@ -493,7 +499,7 @@ function updateSelection(navigation?: ArchiveNavigation) {
         : "down"
       : "auto";
   selectedCode.update({
-    value: Number(r.id.slice(2)),
+    value: displayCode(selected),
     animated: motionActive("rollingNumbers") && mode === "archive",
     direction,
   });
@@ -544,6 +550,7 @@ function replayBootAfterModal(forcePreview: boolean) {
 }
 function openFile() {
   if (!ready) return;
+  if (!documentForRecord(selected)) { void openLibrary(); return; }
   closeModal(() => {
     setMode("detail");
     audio.play("open");
@@ -575,20 +582,22 @@ function renderDetail() {
   const r = records[selected];
   $("#object-id").textContent = "NO." + String(selected + 1).padStart(3, "0");
   $("#detail-content").innerHTML = `
-  <div class="detail-kicker"><span>FILE ${r.id}</span><span>${escapeHtml(r.clearance)}</span></div>
+  <div class="detail-kicker"><span>FILE ${escapeHtml(r.id)}</span><span>${escapeHtml(r.clearance)}</span></div>
   <h2>${escapeHtml(r.en)}</h2><div class="detail-title-cn">${escapeHtml(r.title)}<span>${escapeHtml(r.category)}</span></div>
   <div class="detail-rule"></div>
   <dl class="metadata"><div><dt>DEPARTMENT / 科室</dt><dd>${escapeHtml(r.department)}</dd></div><div><dt>COLLECTION / 编目范围</dt><dd>${escapeHtml(r.date)}</dd></div><div><dt>RELATED / 相关人物</dt><dd>${escapeHtml(r.lead)}</dd></div><div><dt>STATUS / 状态</dt><dd><i></i>${r.clearance === "RESTRICTED" ? "目录访问" : "已归档 · 可读取"}</dd></div></dl>
   <div class="detail-tabs" role="tablist"><button id="tab-overview" class="active" role="tab" aria-controls="tab-panel" aria-selected="true" data-tab="overview">01 <span>概述</span></button><button id="tab-notes" role="tab" aria-controls="tab-panel" aria-selected="false" data-tab="notes">02 <span>研究记录</span></button><button id="tab-history" role="tab" aria-controls="tab-panel" aria-selected="false" data-tab="history">03 <span>访问日志</span></button><i class="tab-indicator" aria-hidden="true"></i></div>
   <div id="tab-panel" class="tab-panel" role="tabpanel">${overview()}</div>
-  <div class="detail-actions"><button class="solid-button" data-action="bookmark">${saved.has(r.id) ? "− REMOVE FROM SAVED" : "＋ SAVE ARCHIVE"}<span>${saved.has(r.id) ? "已收藏" : "收藏档案"}</span></button><a class="export-button" href="${assetUrl(`archives/RHINE-LAB-${r.id}.txt`)}" download="RHINE-LAB-${r.id}.txt" aria-label="导出 ${r.id} 档案">EXPORT <span>↓</span></a></div>
-  <div class="detail-footnote"><a href="${escapeHtml(r.source)}" target="_blank" rel="noopener">设定参考 ↗</a><span>${String(selected + 1).padStart(3, "0")} / ${String(records.length).padStart(3, "0")}</span></div>`;
+  <div class="detail-actions"><button class="solid-button" data-action="bookmark">${saved.has(r.id) ? "− REMOVE FROM SAVED" : "＋ SAVE ARCHIVE"}<span>${saved.has(r.id) ? "已收藏" : "收藏档案"}</span></button><button class="export-button" data-action="edit-local" aria-label="编辑本地文档">EDIT <span>编辑 ↗</span></button></div>
+  <div class="detail-footnote">${r.source ? `<a href="${escapeHtml(r.source)}" target="_blank" rel="noopener">设定参考 ↗</a>` : `<span>LOCAL MARKDOWN</span>`}<span>${String(selected + 1).padStart(3, "0")} / ${String(records.length).padStart(3, "0")}</span></div>`;
   $("#detail-content").setAttribute("tabindex", "-1");
   $('[data-action="bookmark"]').setAttribute("aria-pressed", String(saved.has(r.id)));
   documentDecryption.reset($("#detail-content"), !motionActive("documentReveal") || !scene || scene.decryptionFrame.phase === "clear");
   setTab(activeTab, false);
 }
 function overview() {
+  const doc = documentForRecord(selected);
+  if (doc && !records[selected].source) return `<div class="panel-label">DOCUMENT / 本地文档</div><div class="local-markdown">${renderMarkdown(doc.body)}</div>`;
   return `<div class="panel-label">ABSTRACT / 摘要</div><p>${escapeHtml(records[selected].abstract)}</p>`;
 }
 function setTab(tab: string, sound = true) {
@@ -733,7 +742,7 @@ function motionPreferenceNoteMarkup() {
   return `<div id="motion-preference-note" class="motion-preference-note"><p>${motionSummary(prefs.motion)}</p><span>预设：${preset === "full" ? "完整动画" : preset === "reduced" ? "减少动画" : "自定义"} · 选择会保存在本站</span>${allEnabled ? "" : '<button data-action="enable-motion">启用完整动画并重播 ↻</button>'}</div>`;
 }
 function settingsMarkup() {
-  return `<h2>SYSTEM SETTINGS<small>终端偏好设置</small></h2><p class="settings-intro">JOYCE MOORE <span>·</span> SESSION AUTHORIZED</p>${isWallpaper ? '<p class="wallpaper-settings-note">每次启动都会读取 Wallpaper Engine 中的设置。在此修改仅对当前运行生效，无法持久保存；如需保留，请在 Wallpaper Engine 的壁纸属性中调整。</p>' : ""}<div class="settings-list">${themeSettingsMarkup(prefs.colorTheme === "dark")}${!isWallpaper ? `<label><div><strong>SUPER PERFORMANCE</strong><span>降低三维画质和渲染分辨率，保留完整动效；关闭后恢复原画质</span></div><input type="checkbox" data-pref="superPerformance" ${prefs.superPerformance ? "checked" : ""}/><i class="toggle"></i></label>` : ""}${workbench?.settingsMarkup() ?? ""}${audioSettingsMarkup(prefs)}</div>${motionPreferenceNoteMarkup()}${motionSettingsMarkup(prefs.motion, prefs.motionPreset)}${qualityMarkup(prefs.rendering)}${pwaSettingsMarkup()}${preferencesTransferMarkup()}<div class="settings-shortcuts">${isWallpaper ? '<span>DESKTOP CONTROLS</span><p>拖动阵列或点击界面按钮浏览档案。桌面模式下，方向键与滚轮可能无法传入壁纸。</p>' : '<span>KEYBOARD CONTROLS</span><p><kbd>←</kbd><kbd>→</kbd> 切列 <kbd>↑</kbd><kbd>↓</kbd> 选档 <kbd>ENTER</kbd> 读取 <kbd>/</kbd> 检索 <kbd>ESC</kbd> 返回</p>'}</div><div class="settings-bottom">${!isWallpaper && document.fullscreenEnabled ? '<button data-action="fullscreen">FULLSCREEN <span>↗</span></button>' : ''}<button data-action="restart">REINITIALIZE SYSTEM <span>↻</span></button></div><div class="modal-bottom"><span>ANALYSIS OS / 1.0 · 使用 MiSans 字体（小米） <a href="${assetUrl("fonts/MiSans-license.pdf")}" target="_blank" rel="noopener">字体许可</a></span><span>POWERED BY RHINE LAB</span></div>`;
+  return `<h2>SYSTEM SETTINGS<small>终端偏好设置</small></h2><p class="settings-intro">JOYCE MOORE <span>·</span> SESSION AUTHORIZED</p>${isWallpaper ? '<p class="wallpaper-settings-note">每次启动都会读取 Wallpaper Engine 中的设置。在此修改仅对当前运行生效，无法持久保存；如需保留，请在 Wallpaper Engine 的壁纸属性中调整。</p>' : ""}<div class="settings-list">${themeSettingsMarkup(prefs.colorTheme === "dark")}${!isWallpaper ? `<label><div><strong>SUPER PERFORMANCE</strong><span>降低三维画质和渲染分辨率，保留完整动效；关闭后恢复原画质</span></div><input type="checkbox" data-pref="superPerformance" ${prefs.superPerformance ? "checked" : ""}/><i class="toggle"></i></label>` : ""}${workbench?.settingsMarkup() ?? ""}${audioSettingsMarkup(prefs)}</div>${motionPreferenceNoteMarkup()}${motionSettingsMarkup(prefs.motion, prefs.motionPreset)}${qualityMarkup(prefs.rendering)}${preferencesTransferMarkup()}<div class="settings-shortcuts">${isWallpaper ? '<span>DESKTOP CONTROLS</span><p>拖动阵列或点击界面按钮浏览档案。桌面模式下，方向键与滚轮可能无法传入壁纸。</p>' : '<span>KEYBOARD CONTROLS</span><p><kbd>←</kbd><kbd>→</kbd> 切列 <kbd>↑</kbd><kbd>↓</kbd> 选档 <kbd>ENTER</kbd> 读取 <kbd>/</kbd> 检索 <kbd>ESC</kbd> 返回</p>'}</div><div class="settings-bottom">${!isWallpaper ? '<button data-action="fullscreen">FULLSCREEN <span>↗</span></button>' : ''}<button data-action="restart">REINITIALIZE SYSTEM <span>↻</span></button></div><div class="modal-bottom"><span>ANALYSIS OS / 1.0 · 使用 MiSans 字体（小米） <a href="${assetUrl("fonts/MiSans-license.pdf")}" target="_blank" rel="noopener">字体许可</a></span><span>POWERED BY RHINE LAB</span></div>`;
 }
 
 document.addEventListener("input", (e) => {
@@ -790,6 +799,9 @@ document.addEventListener("change", (e) => {
   }
 });
 document.addEventListener("click", (e) => {
+  if (libraryVisible) return;
+  const link = (e.target as Element).closest<HTMLAnchorElement>("a[href]");
+  if (link && /^https?:/.test(link.href)) { e.preventDefault(); void window.rhine.openExternal(link.href); return; }
   const themeButton = (e.target as Element).closest<HTMLElement>("[data-color-theme]");
   if (themeButton) { prefs.colorTheme = themeButton.dataset.colorTheme === "dark" ? "dark" : "light"; savePrefs(); return; }
   if (!started) return;
@@ -837,6 +849,8 @@ document.addEventListener("click", (e) => {
     return;
   }
   const action = el.dataset.action;
+  if (action === "edit-local") { void openLibrary(records[selected].id); return; }
+  if (action === "search" || action === "saved") { void openLibrary(undefined, action === "saved" ? "saved" : "all"); return; }
   if (action === "export-preferences") { exportPreferences(); return; }
   if (action === "import-preferences") { importPreferences(); return; }
   if (action === "toggle-three") { void toggleThree(); return; }
@@ -894,7 +908,9 @@ document.addEventListener("click", (e) => {
     savePrefs();
     replayBoot();
   }
-  if (action === "fullscreen" && document.fullscreenEnabled) {
+  if (action === "fullscreen") {
+    void window.rhine.fullscreen();
+    return;
     if (document.fullscreenElement) void document.exitFullscreen();
     else
       void document.documentElement
@@ -903,6 +919,7 @@ document.addEventListener("click", (e) => {
   }
 });
 document.addEventListener("keydown", (e) => {
+  if (libraryVisible) return;
   if (!started) return;
   if (viewer?.isOpen) return;
   if (playground?.active && !modal) {
@@ -954,7 +971,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "/") {
     e.preventDefault();
     if (mode === "boot") setMode("archive");
-    openModal("search");
+    void openLibrary();
   }
   if (e.key === "ArrowLeft" && mode !== "boot") {
     e.preventDefault();
@@ -1097,11 +1114,11 @@ function frame(ms: number) {
 function bindScene(scene: ArchiveScene, cell?: { lane: number; row: number }) {
     scene.select(selected, cell ? { cell } : undefined);
     scene.onSelect = (i, cell) => {
-      if (mode !== "archive" || modal || viewer?.isOpen) return;
+      if (mode !== "archive" || libraryVisible || modal || viewer?.isOpen) return;
       select(i, cell ? { cell } : undefined);
     };
     scene.onNavigate = (axis, direction) => {
-      if (mode !== "archive" || modal || viewer?.isOpen) return;
+      if (mode !== "archive" || libraryVisible || modal || viewer?.isOpen) return;
       if (axis === "lane") stepColumn(direction);
       else stepFile(direction);
     };
@@ -1116,7 +1133,7 @@ function bindScene(scene: ArchiveScene, cell?: { lane: number; row: number }) {
       const animated = motionActive("rollingText") && mode === "archive";
       const numbersAnimated = motionActive("rollingNumbers") && mode === "archive";
       hoverCode.update({
-        value: Number(records[i].id.slice(2)),
+        value: displayCode(i),
         animated: !label.hidden && numbersAnimated,
       });
       hoverTitle.update({ text: records[i].title, animated: !label.hidden && animated });
@@ -1261,7 +1278,7 @@ function completeStartup(silent: boolean) {
   requestAnimationFrame(frame);
   // Do not compete with entry audio/font downloads. Full offline installation
   // begins after startup is complete and remains atomic.
-  setTimeout(() => void initPwa(notify), 1500);
+  // Desktop assets are local; no service worker is registered.
 }
 updateSelection();
 const customBackground = isWallpaper ? new WallpaperBackground($("#stage"), notify) : undefined;
@@ -1341,7 +1358,7 @@ if (isWallpaper) {
 void start();
 // Deterministic review controls: the running application, never a video surrogate.
 Object.assign(window, {
-  rhine: {
+  rhineReview: {
     // The review button supplies a real user activation. Preferences stay local to this preview.
     playBootPreview: async (music = false) => {
       if (!ready || !navigator.userActivation.isActive) return false;
@@ -1383,3 +1400,30 @@ Object.assign(window, {
   },
 });
 if (import.meta.hot) import.meta.hot.dispose(() => audio.dispose());
+
+window.addEventListener("rhine-library-visibility", event => {
+  libraryVisible = (event as CustomEvent<boolean>).detail;
+  $("#viewport").inert = libraryVisible;
+  if (!libraryVisible) { saved.clear(); readLocal<string[]>("rhine-saved", []).forEach(id => saved.add(id)); updateSelection(); }
+});
+window.addEventListener("rhine-open-settings", () => openModal("settings"));
+window.addEventListener("rhine-library-changed", event => refreshExhibit((event as CustomEvent<RhineDocument[]>).detail));
+window.addEventListener("rhine-library-selected", event => {
+  const id = (event as CustomEvent<string>).detail;
+  if (!id) return;
+  const index = exhibitDocument(id);
+  if (index >= 0) select(index);
+});
+function refreshExhibit(documents: RhineDocument[]) {
+  if (documents.length === desktopDocuments.length && documents.every((doc, index) => doc.id === desktopDocuments[index].id && doc.revision === desktopDocuments[index].revision)) return;
+  const id = records[selected]?.id;
+  setDesktopDocuments(documents);
+  const next = records.findIndex(record => record.id === id);
+  columnMemory.splice(0, columnMemory.length, ...archiveColumns.map((_, lane) => columnFiles(lane)[0]));
+  select(next < 0 ? 0 : next);
+}
+let diskRefresh = 0;
+window.rhine.onChanged(() => {
+  const request = ++diskRefresh;
+  void window.rhine.list().then(result => { if (request === diskRefresh) refreshExhibit(result.documents); }).catch(error => notify(String(error)));
+});
